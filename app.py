@@ -176,7 +176,7 @@ User question:
     except Exception as e:
 
         print("Search decision error:", e)
-
+        
         # If the decision system fails,
         # don't block normal chatting.
         return False
@@ -195,27 +195,36 @@ def chat(message, history):
         uploaded_files = []
 
     file_context_parts = []
+uploaded_images = []
 
-    for file_path in uploaded_files:
-        try:
-            filename, text = process_file(file_path)
+for file_path in uploaded_files:
 
-            if filename and text:
-                file_context_parts.append(
-                    f"FILE: {filename}\n{text}"
-                )
+    try:
 
-        except Exception as e:
-            print("File processing error:", e)
+        filename, content = process_file(file_path)
 
-    file_context = "\n\n".join(file_context_parts)
-    if file_context:
-        system_content += (
-            "\n\nUPLOADED FILE CONTENT:\n"
-            + file_context
-            + "\n\nUse the uploaded file content when answering. "
-            "Do not invent information that is not present in the file."
-        )
+        if not filename or not content:
+            continue
+
+        # IMAGE
+        if isinstance(content, dict):
+
+            if content.get("type") == "image_url":
+
+                uploaded_images.append(content)
+
+        # TEXT / DOCUMENT
+        else:
+
+            file_context_parts.append(
+                f"FILE: {filename}\n{content}"
+            )
+
+    except Exception as e:
+
+        print("File processing error:", e)
+
+
 
     # -----------------------------------------------------
     # LOAD MEMORY
@@ -275,6 +284,16 @@ def chat(message, history):
         )
     )
 
+    file_context = "\n\n".join(file_context_parts)
+
+if file_context:
+    system_content += (
+        "\n\nUPLOADED FILE CONTENT:\n"
+        + file_context
+        + "\n\nUse the uploaded file content when answering. "
+        "Do not invent information that is not present in the file."
+    )
+
 
     # Add web results only when available
     if search_context:
@@ -295,60 +314,136 @@ def chat(message, history):
 
 
     # -----------------------------------------------------
-    # PREVIOUS CHAT HISTORY
-    # -----------------------------------------------------
+# PREVIOUS CHAT HISTORY
+# -----------------------------------------------------
 
-    for msg in history:
+for msg in history:
 
-        role = msg.get("role")
-        content = msg.get("content")
+    role = msg.get("role")
+    content = msg.get("content")
 
-        if role not in ["user", "assistant"]:
-            continue
+    if role not in ["user", "assistant"]:
+        continue
 
-        if isinstance(content, str):
+    if isinstance(content, str):
 
-            clean_content = content
+        if content.strip():
 
-        elif isinstance(content, list):
+            current_content = []
 
-            text_parts = []
+if user_text.strip():
 
-            for item in content:
+    current_content.append({
+        "type": "text",
+        "text": user_text
+    })
 
-                if isinstance(item, str):
-                    text_parts.append(item)
 
-                elif isinstance(item, dict):
+for image in uploaded_images:
 
-                    if item.get("type") == "text":
-                        text_parts.append(
-                            str(item.get("text", ""))
-                        )
+    current_content.append(image)
 
-            clean_content = "\n".join(
-                part for part in text_parts if part
-            )
 
-        elif isinstance(content, dict):
+if current_content:
 
-            if content.get("type") == "text":
-                clean_content = str(
-                    content.get("text", "")
-                )
-            else:
-                clean_content = ""
+    messages.append({
+        "role": "user",
+        "content": current_content
+    })
 
-        else:
+    elif isinstance(content, list):
 
-            clean_content = str(content) if content else ""
+        clean_content = []
 
-        if clean_content.strip():
+        for item in content:
+
+            if isinstance(item, str):
+
+                if item.strip():
+
+                    clean_content.append({
+                        "type": "text",
+                        "text": item
+                    })
+
+            elif isinstance(item, dict):
+
+                item_type = item.get("type")
+
+                # TEXT
+                if item_type == "text":
+
+                    text = str(
+                        item.get("text", "")
+                    )
+
+                    if text.strip():
+
+                        clean_content.append({
+                            "type": "text",
+                            "text": text
+                        })
+
+                # IMAGE
+                elif item_type == "image_url":
+
+                    image_url = item.get(
+                        "image_url"
+                    )
+
+                    if image_url:
+
+                        clean_content.append({
+                            "type": "image_url",
+                            "image_url": image_url
+                        })
+
+        if clean_content:
 
             messages.append({
                 "role": role,
                 "content": clean_content
             })
+
+    elif isinstance(content, dict):
+
+        item_type = content.get("type")
+
+        if item_type == "text":
+
+            text = str(
+                content.get("text", "")
+            )
+
+            if text.strip():
+
+                messages.append({
+                    "role": role,
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": text
+                        }
+                    ]
+                })
+
+        elif item_type == "image_url":
+
+            image_url = content.get(
+                "image_url"
+            )
+
+            if image_url:
+
+                messages.append({
+                    "role": role,
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": image_url
+                        }
+                    ]
+                })
 
 
     # -----------------------------------------------------
@@ -508,12 +603,16 @@ demo = gr.ChatInterface(
     textbox=gr.MultimodalTextbox(
         file_count="multiple",
         file_types=[
-            ".pdf",
-            ".txt",
-            ".docx",
-            ".csv",
-            ".xlsx"
-        ]
+    ".pdf",
+    ".txt",
+    ".docx",
+    ".csv",
+    ".xlsx",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".webp"
+]
     )
 )
 
