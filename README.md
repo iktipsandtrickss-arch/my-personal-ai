@@ -1,2 +1,2 @@
 # my-personal-ai
-My pwesonal AI assistant 
+My personal AI assistant 
