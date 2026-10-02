@@ -1,9 +1,10 @@
 import requests
 
-LOCAL_AI_URL = "https://flu-mil-thee-burning.trycloudflare.com"
+LOCAL_AI_URL = "https://barcelona-height-amendments-blog.trycloudflare.com/v1/chat/completions"
 
 
 def ask_local_ai(messages):
+
     response = requests.post(
         LOCAL_AI_URL,
         json={
@@ -18,4 +19,5 @@ def ask_local_ai(messages):
     response.raise_for_status()
 
     data = response.json()
+
     return data["choices"][0]["message"]["content"]
