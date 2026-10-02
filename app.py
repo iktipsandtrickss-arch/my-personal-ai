@@ -4,7 +4,7 @@ import gradio as gr
 
 from ddgs import DDGS
 from memory import save_memory, get_memories
-
+from local_ai import ask_local_ai
 
 # =========================================================
 # CONFIG
