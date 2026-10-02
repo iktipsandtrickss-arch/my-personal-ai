@@ -249,9 +249,9 @@ def chat(message, history):
 
     if should_search:
 
-        print("Web search:", message)
+        print("Web search:", user_text)
 
-        search_context, sources = web_search(message)
+        search_context, sources = web_search(user_text)
 
 
     # -----------------------------------------------------
@@ -331,7 +331,7 @@ def chat(message, history):
 
     messages.append({
         "role": "user",
-        "content": message
+        "content": user_text
     })
 
 
@@ -429,7 +429,7 @@ def chat(message, history):
     # MEMORY DETECTION
     # -----------------------------------------------------
 
-    lower = message.lower()
+    lower = user_text.lower()
 
     memory_triggers = [
         "remember that",
@@ -451,12 +451,12 @@ def chat(message, history):
 
             save_memory(
                 USER_ID,
-                message
+                user_text
             )
 
             print(
                 "Memory saved:",
-                message
+                user_text
             )
 
         except Exception as e:
