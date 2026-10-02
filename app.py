@@ -5,6 +5,8 @@ import gradio as gr
 from ddgs import DDGS
 from memory import save_memory, get_memories
 from local_ai import ask_local_ai
+from file_handler import process_file
+
 
 # =========================================================
 # CONFIG
@@ -104,7 +106,7 @@ def web_search(query, max_results=5):
 # DECIDE WHETHER WEB SEARCH IS NEEDED
 # =========================================================
 
-def needs_web_search(message):
+def needs_web_search(user_text):
 
     prompt = f"""
 Decide whether this user question needs an internet/web search.
@@ -138,7 +140,7 @@ Use NO_SEARCH for:
 - general stable knowledge
 
 User question:
-{message}
+{user_text}
 """
 
     try:
@@ -185,6 +187,28 @@ User question:
 # =========================================================
 
 def chat(message, history):
+    if isinstance(message, dict):
+        user_text = message.get("text", "") or ""
+        uploaded_files = message.get("files", []) or []
+    else:
+        user_text = message or ""
+        uploaded_files = []
+
+    file_context_parts = []
+
+    for file_path in uploaded_files:
+        try:
+            filename, text = process_file(file_path)
+
+            if filename and text:
+                file_context_parts.append(
+                    f"FILE: {filename}\n{text}"
+                )
+
+        except Exception as e:
+            print("File processing error:", e)
+
+    file_context = "\n\n".join(file_context_parts)
 
     # -----------------------------------------------------
     # LOAD MEMORY
@@ -216,7 +240,7 @@ def chat(message, history):
 
     try:
 
-        should_search = needs_web_search(message)
+        should_search = needs_web_search(user_text)
 
     except Exception:
 
@@ -453,7 +477,18 @@ def chat(message, history):
 demo = gr.ChatInterface(
     fn=chat,
     title="BRO",
-    description="Your personal AI bro 🤖"
+    description="Your personal AI bro 🤖",
+    multimodal=True,
+    textbox=gr.MultimodalTextbox(
+        file_count="multiple",
+        file_types=[
+            ".pdf",
+            ".txt",
+            ".docx",
+            ".csv",
+            ".xlsx"
+        ]
+    )
 )
 
 
