@@ -166,8 +166,8 @@ def chat(message, history):
 
 demo = gr.ChatInterface(
     fn=chat,
-    title="My Personal AI",
-    description="My own AI assistant"
+    title="BRO",
+    description="My Personal AI bro"
 )
 
 
