@@ -448,9 +448,12 @@ try:
                 "Memory save error:",
                 e
             )
+return answer
 
+except Exception as e:
+    print("Response processing error:", e)
+    return f"Response processing error: {e}"
 
-    return answer
 
 
 # =========================================================
