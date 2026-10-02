@@ -1,7 +1,7 @@
 import os
 import requests
 import gradio as gr
-
+from ddgs import DDGS
 from memory import save_memory, get_memories
 
 API_KEY = os.environ["OPENROUTER_API_KEY"]
