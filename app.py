@@ -195,43 +195,40 @@ def chat(message, history):
         uploaded_files = []
 
     file_context_parts = []
-uploaded_images = []
+    uploaded_images = []
 
-for file_path in uploaded_files:
+    # -----------------------------------------------------
+    # PROCESS UPLOADED FILES
+    # -----------------------------------------------------
 
-    try:
+    for file_path in uploaded_files:
 
-        filename, content = process_file(file_path)
+        try:
+            filename, content = process_file(file_path)
 
-        if not filename or not content:
-            continue
+            if not filename or not content:
+                continue
 
-        # IMAGE
-        if isinstance(content, dict):
+            # IMAGE
+            if isinstance(content, dict):
 
-            if content.get("type") == "image_url":
+                if content.get("type") == "image_url":
+                    uploaded_images.append(content)
 
-                uploaded_images.append(content)
+            # TEXT / DOCUMENT
+            else:
+                file_context_parts.append(
+                    f"FILE: {filename}\n{content}"
+                )
 
-        # TEXT / DOCUMENT
-        else:
-
-            file_context_parts.append(
-                f"FILE: {filename}\n{content}"
-            )
-
-    except Exception as e:
-
-        print("File processing error:", e)
-
-
+        except Exception as e:
+            print("File processing error:", e)
 
     # -----------------------------------------------------
     # LOAD MEMORY
     # -----------------------------------------------------
 
     try:
-
         memories = get_memories(USER_ID)
 
         memory_text = "\n".join(
@@ -241,11 +238,8 @@ for file_path in uploaded_files:
         )
 
     except Exception as e:
-
         print("Memory load error:", e)
-
         memory_text = ""
-
 
     # -----------------------------------------------------
     # WEB SEARCH DECISION
@@ -255,20 +249,15 @@ for file_path in uploaded_files:
     sources = []
 
     try:
-
         should_search = needs_web_search(user_text)
-
     except Exception:
-
         should_search = False
-
 
     if should_search:
 
         print("Web search:", user_text)
 
         search_context, sources = web_search(user_text)
-
 
     # -----------------------------------------------------
     # SYSTEM MESSAGE
@@ -286,16 +275,19 @@ for file_path in uploaded_files:
 
     file_context = "\n\n".join(file_context_parts)
 
-if file_context:
-    system_content += (
-        "\n\nUPLOADED FILE CONTENT:\n"
-        + file_context
-        + "\n\nUse the uploaded file content when answering. "
-        "Do not invent information that is not present in the file."
-    )
+    if file_context:
 
+        system_content += (
+            "\n\nUPLOADED FILE CONTENT:\n"
+            + file_context
+            + "\n\nUse the uploaded file content when answering. "
+            "Do not invent information that is not present in the file."
+        )
 
-    # Add web results only when available
+    # -----------------------------------------------------
+    # WEB RESULTS
+    # -----------------------------------------------------
+
     if search_context:
 
         system_content += (
@@ -304,7 +296,6 @@ if file_context:
             + "\n\nUse these results to answer the user's question."
         )
 
-
     messages = [
         {
             "role": "system",
@@ -312,151 +303,153 @@ if file_context:
         }
     ]
 
-
     # -----------------------------------------------------
-# PREVIOUS CHAT HISTORY
-# -----------------------------------------------------
+    # PREVIOUS CHAT HISTORY
+    # -----------------------------------------------------
 
-for msg in history:
+    for msg in history:
 
-    role = msg.get("role")
-    content = msg.get("content")
+        role = msg.get("role")
+        content = msg.get("content")
 
-    if role not in ["user", "assistant"]:
-        continue
+        if role not in ["user", "assistant"]:
+            continue
 
-    if isinstance(content, str):
+        # SIMPLE TEXT MESSAGE
+        if isinstance(content, str):
 
-        if content.strip():
+            if content.strip():
 
-            current_content = []
+                messages.append({
+                    "role": role,
+                    "content": content
+                })
 
-if user_text.strip():
+        # MULTIMODAL CONTENT
+        elif isinstance(content, list):
 
-    current_content.append({
-        "type": "text",
-        "text": user_text
-    })
+            clean_content = []
 
+            for item in content:
 
-for image in uploaded_images:
+                # TEXT ITEM
+                if isinstance(item, str):
 
-    current_content.append(image)
+                    if item.strip():
 
+                        clean_content.append({
+                            "type": "text",
+                            "text": item
+                        })
 
-if current_content:
+                # DICTIONARY ITEM
+                elif isinstance(item, dict):
 
-    messages.append({
-        "role": "user",
-        "content": current_content
-    })
+                    item_type = item.get("type")
 
-elif isinstance(content, list):
+                    # TEXT
+                    if item_type == "text":
 
-        clean_content = []
+                        text = str(
+                            item.get("text", "")
+                        )
 
-        for item in content:
+                        if text.strip():
 
-            if isinstance(item, str):
+                            clean_content.append({
+                                "type": "text",
+                                "text": text
+                            })
 
-                if item.strip():
+                    # IMAGE
+                    elif item_type == "image_url":
 
-                    clean_content.append({
-                        "type": "text",
-                        "text": item
+                        image_url = item.get(
+                            "image_url"
+                        )
+
+                        if image_url:
+
+                            clean_content.append({
+                                "type": "image_url",
+                                "image_url": image_url
+                            })
+
+            if clean_content:
+
+                messages.append({
+                    "role": role,
+                    "content": clean_content
+                })
+
+        # SINGLE DICTIONARY CONTENT
+        elif isinstance(content, dict):
+
+            item_type = content.get("type")
+
+            # TEXT
+            if item_type == "text":
+
+                text = str(
+                    content.get("text", "")
+                )
+
+                if text.strip():
+
+                    messages.append({
+                        "role": role,
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": text
+                            }
+                        ]
                     })
 
-            elif isinstance(item, dict):
+            # IMAGE
+            elif item_type == "image_url":
 
-                item_type = item.get("type")
+                image_url = content.get(
+                    "image_url"
+                )
 
-                # TEXT
-                if item_type == "text":
+                if image_url:
 
-                    text = str(
-                        item.get("text", "")
-                    )
-
-                    if text.strip():
-
-                        clean_content.append({
-                            "type": "text",
-                            "text": text
-                        })
-
-                # IMAGE
-                elif item_type == "image_url":
-
-                    image_url = item.get(
-                        "image_url"
-                    )
-
-                    if image_url:
-
-                        clean_content.append({
-                            "type": "image_url",
-                            "image_url": image_url
-                        })
-
-        if clean_content:
-
-            messages.append({
-                "role": role,
-                "content": clean_content
-            })
-
-    elif isinstance(content, dict):
-
-        item_type = content.get("type")
-
-        if item_type == "text":
-
-            text = str(
-                content.get("text", "")
-            )
-
-            if text.strip():
-
-                messages.append({
-                    "role": role,
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": text
-                        }
-                    ]
-                })
-
-        elif item_type == "image_url":
-
-            image_url = content.get(
-                "image_url"
-            )
-
-            if image_url:
-
-                messages.append({
-                    "role": role,
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": image_url
-                        }
-                    ]
-                })
-
+                    messages.append({
+                        "role": role,
+                        "content": [
+                            {
+                                "type": "image_url",
+                                "image_url": image_url
+                            }
+                        ]
+                    })
 
     # -----------------------------------------------------
     # CURRENT USER MESSAGE
     # -----------------------------------------------------
 
-    messages.append({
-        "role": "user",
-        "content": user_text
-    })
+    current_content = []
 
+    if user_text.strip():
 
-# -----------------------------------------------------
+        current_content.append({
+            "type": "text",
+            "text": user_text
+        })
+
+    for image in uploaded_images:
+
+        current_content.append(image)
+
+    if current_content:
+
+        messages.append({
+            "role": "user",
+            "content": current_content
+        })
+
+    # -----------------------------------------------------
     # OPENROUTER → LOCAL SMOLLM2 FALLBACK
     # -----------------------------------------------------
 
@@ -493,14 +486,19 @@ elif isinstance(content, list):
                 f"HTTP {response.status_code}: {response.text}"
             )
 
-            print("OpenRouter failed:", openrouter_error)
+            print(
+                "OpenRouter failed:",
+                openrouter_error
+            )
 
     except Exception as e:
 
         openrouter_error = str(e)
 
-        print("OpenRouter connection failed:", e)
-
+        print(
+            "OpenRouter connection failed:",
+            e
+        )
 
     # -----------------------------------------------------
     # FALLBACK TO LOCAL SMOLLM2
@@ -508,7 +506,9 @@ elif isinstance(content, list):
 
     if not answer:
 
-        print("OpenRouter unavailable → Using local SmolLM2")
+        print(
+            "OpenRouter unavailable → Using local SmolLM2"
+        )
 
         try:
 
@@ -516,17 +516,19 @@ elif isinstance(content, list):
 
         except Exception as e:
 
-            print("Local AI error:", e)
+            print(
+                "Local AI error:",
+                e
+            )
 
             return (
-                "ভাই, OpenRouter আর local SmolLM2—দুটোতেই সমস্যা হচ্ছে.\n\n"
+                "ভাই, OpenRouter আর local SmolLM2—"
+                "দুটোতেই সমস্যা হচ্ছে.\n\n"
                 f"OpenRouter: {openrouter_error}\n"
                 f"Local AI: {e}"
             )
 
-
     answer = answer.strip()
-
 
     # -----------------------------------------------------
     # ADD SOURCES
@@ -538,13 +540,21 @@ elif isinstance(content, list):
 
         for source in sources:
 
-            title = source.get("title", "Source")
-            url = source.get("url", "")
+            title = source.get(
+                "title",
+                "Source"
+            )
+
+            url = source.get(
+                "url",
+                ""
+            )
 
             if url:
 
-                answer += f"\n- [{title}]({url})"
-
+                answer += (
+                    f"\n- [{title}]({url})"
+                )
 
     # -----------------------------------------------------
     # MEMORY DETECTION
@@ -561,7 +571,6 @@ elif isinstance(content, list):
         "মনে রাখো",
         "মনে রেখো"
     ]
-
 
     if any(
         trigger in lower
@@ -586,7 +595,6 @@ elif isinstance(content, list):
                 "Memory save error:",
                 e
             )
-
 
     return answer
 
