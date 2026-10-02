@@ -1,4 +1,0 @@
-Hello BRO!
-
-This is a test file.
-My chatbot should be able to read this file.
