@@ -312,30 +312,76 @@ def chat(message, history):
 
 
     # -----------------------------------------------------
-    # OPENROUTER
-    # -----------------------------------------------------
+# OPENROUTER → LOCAL SMOLLM2 FALLBACK
+# -----------------------------------------------------
+
+answer = None
+openrouter_error = None
+
+try:
+
+    response = requests.post(
+        OPENROUTER_URL,
+
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json"
+        },
+
+        json={
+            "model": "openrouter/free",
+            "messages": messages
+        },
+
+        timeout=60
+    )
+
+    if response.status_code == 200:
+
+        data = response.json()
+
+        answer = data["choices"][0]["message"]["content"]
+
+    else:
+
+        openrouter_error = (
+            f"HTTP {response.status_code}: {response.text}"
+        )
+
+        print("OpenRouter failed:", openrouter_error)
+
+
+except Exception as e:
+
+    openrouter_error = str(e)
+
+    print("OpenRouter connection failed:", e)
+
+
+# -----------------------------------------------------
+# FALLBACK TO LOCAL SMOLLM2
+# -----------------------------------------------------
+
+if not answer:
+
+    print("OpenRouter unavailable → Using local SmolLM2")
 
     try:
 
-        response = requests.post(
-            OPENROUTER_URL,
-
-            headers={
-                "Authorization": f"Bearer {API_KEY}",
-                "Content-Type": "application/json"
-            },
-
-            json={
-                "model": "openrouter/free",
-                "messages": messages
-            },
-
-            timeout=60
-        )
+        answer = ask_local_ai(messages)
 
     except Exception as e:
 
-        return "Connection error: " + str(e)
+        print("Local AI error:", e)
+
+        return (
+            "ভাই, OpenRouter আর local SmolLM2—দুটোতেই সমস্যা হচ্ছে.\n\n"
+            f"OpenRouter: {openrouter_error}\n"
+            f"Local AI: {e}"
+        )
+
+
+answer = answer.strip()
 
 
     # -----------------------------------------------------
@@ -344,28 +390,7 @@ def chat(message, history):
 
     try:
 
-        data = response.json()
-
-    except:
-
-        return "Server error."
-
-
-    if response.status_code != 200:
-
-        return "OpenRouter Error: " + str(data)
-
-
-    try:
-
-        answer = data["choices"][0]["message"]["content"]
-
-    except:
-
-        return "AI response পাওয়া যায়নি: " + str(data)
-
-
-    answer = answer.strip()
+        data = r
 
 
     # -----------------------------------------------------
