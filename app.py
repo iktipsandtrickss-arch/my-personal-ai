@@ -311,87 +311,78 @@ def chat(message, history):
     })
 
 
+# -----------------------------------------------------
+    # OPENROUTER → LOCAL SMOLLM2 FALLBACK
     # -----------------------------------------------------
-# OPENROUTER → LOCAL SMOLLM2 FALLBACK
-# -----------------------------------------------------
 
-answer = None
-openrouter_error = None
-
-try:
-
-    response = requests.post(
-        OPENROUTER_URL,
-
-        headers={
-            "Authorization": f"Bearer {API_KEY}",
-            "Content-Type": "application/json"
-        },
-
-        json={
-            "model": "openrouter/free",
-            "messages": messages
-        },
-
-        timeout=60
-    )
-
-    if response.status_code == 200:
-
-        data = response.json()
-
-        answer = data["choices"][0]["message"]["content"]
-
-    else:
-
-        openrouter_error = (
-            f"HTTP {response.status_code}: {response.text}"
-        )
-
-        print("OpenRouter failed:", openrouter_error)
-
-
-except Exception as e:
-
-    openrouter_error = str(e)
-
-    print("OpenRouter connection failed:", e)
-
-
-# -----------------------------------------------------
-# FALLBACK TO LOCAL SMOLLM2
-# -----------------------------------------------------
-
-if not answer:
-
-    print("OpenRouter unavailable → Using local SmolLM2")
+    answer = None
+    openrouter_error = None
 
     try:
 
-        answer = ask_local_ai(messages)
+        response = requests.post(
+            OPENROUTER_URL,
+
+            headers={
+                "Authorization": f"Bearer {API_KEY}",
+                "Content-Type": "application/json"
+            },
+
+            json={
+                "model": "openrouter/free",
+                "messages": messages
+            },
+
+            timeout=60
+        )
+
+        if response.status_code == 200:
+
+            data = response.json()
+
+            answer = data["choices"][0]["message"]["content"]
+
+        else:
+
+            openrouter_error = (
+                f"HTTP {response.status_code}: {response.text}"
+            )
+
+            print("OpenRouter failed:", openrouter_error)
 
     except Exception as e:
 
-        print("Local AI error:", e)
+        openrouter_error = str(e)
 
-        return (
-            "ভাই, OpenRouter আর local SmolLM2—দুটোতেই সমস্যা হচ্ছে.\n\n"
-            f"OpenRouter: {openrouter_error}\n"
-            f"Local AI: {e}"
-        )
-
-
-answer = answer.strip()
+        print("OpenRouter connection failed:", e)
 
 
     # -----------------------------------------------------
-    # RESPONSE
+    # FALLBACK TO LOCAL SMOLLM2
     # -----------------------------------------------------
 
-try:
-    data = r
+    if not answer:
 
-    #
+        print("OpenRouter unavailable → Using local SmolLM2")
+
+        try:
+
+            answer = ask_local_ai(messages)
+
+        except Exception as e:
+
+            print("Local AI error:", e)
+
+            return (
+                "ভাই, OpenRouter আর local SmolLM2—দুটোতেই সমস্যা হচ্ছে.\n\n"
+                f"OpenRouter: {openrouter_error}\n"
+                f"Local AI: {e}"
+            )
+
+
+    answer = answer.strip()
+
+
     # -----------------------------------------------------
     # ADD SOURCES
     # -----------------------------------------------------
@@ -402,10 +393,12 @@ try:
 
         for source in sources:
 
-            title = source["title"]
-            url = source["url"]
+            title = source.get("title", "Source")
+            url = source.get("url", "")
 
-            answer += f"\n- [{title}]({url})"
+            if url:
+
+                answer += f"\n- [{title}]({url})"
 
 
     # -----------------------------------------------------
@@ -448,12 +441,9 @@ try:
                 "Memory save error:",
                 e
             )
-return answer
 
-except Exception as e:
-    print("Response processing error:", e)
-    return f"Response processing error: {e}"
 
+    return answer
 
 
 # =========================================================
