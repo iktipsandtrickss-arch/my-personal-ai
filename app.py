@@ -351,7 +351,7 @@ if current_content:
         "content": current_content
     })
 
-    elif isinstance(content, list):
+elif isinstance(content, list):
 
         clean_content = []
 
