@@ -1,6 +1,6 @@
 import requests
 
-LOCAL_AI_URL = "http://127.0.0.1:8080/v1/chat/completions"
+LOCAL_AI_URL = "https://flu-mil-thee-burning.trycloudflare.com"
 
 
 def ask_local_ai(messages):
