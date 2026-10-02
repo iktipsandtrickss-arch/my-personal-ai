@@ -209,6 +209,13 @@ def chat(message, history):
             print("File processing error:", e)
 
     file_context = "\n\n".join(file_context_parts)
+    if file_context:
+        system_content += (
+            "\n\nUPLOADED FILE CONTENT:\n"
+            + file_context
+            + "\n\nUse the uploaded file content when answering. "
+            "Do not invent information that is not present in the file."
+        )
 
     # -----------------------------------------------------
     # LOAD MEMORY
@@ -296,32 +303,51 @@ def chat(message, history):
         role = msg.get("role")
         content = msg.get("content")
 
-        if isinstance(content, list):
+        if role not in ["user", "assistant"]:
+            continue
+
+        if isinstance(content, str):
+
+            clean_content = content
+
+        elif isinstance(content, list):
 
             text_parts = []
 
             for item in content:
 
-                if (
-                    isinstance(item, dict)
-                    and item.get("type") == "text"
-                ):
-                    text_parts.append(
-                        item.get("text", "")
-                    )
-
-                elif isinstance(item, str):
-
+                if isinstance(item, str):
                     text_parts.append(item)
 
-            content = "".join(text_parts)
+                elif isinstance(item, dict):
 
+                    if item.get("type") == "text":
+                        text_parts.append(
+                            str(item.get("text", ""))
+                        )
 
-        if role in ["user", "assistant"] and content:
+            clean_content = "\n".join(
+                part for part in text_parts if part
+            )
+
+        elif isinstance(content, dict):
+
+            if content.get("type") == "text":
+                clean_content = str(
+                    content.get("text", "")
+                )
+            else:
+                clean_content = ""
+
+        else:
+
+            clean_content = str(content) if content else ""
+
+        if clean_content.strip():
 
             messages.append({
                 "role": role,
-                "content": content
+                "content": clean_content
             })
 
 
