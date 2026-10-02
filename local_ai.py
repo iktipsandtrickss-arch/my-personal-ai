@@ -11,7 +11,7 @@ def ask_local_ai(messages):
             "model": "local-model",
             "messages": messages,
             "temperature": 0.7,
-            "max_tokens": 512
+            "max_tokens": 150
         },
         timeout=300
     )
