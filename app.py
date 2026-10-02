@@ -9,6 +9,37 @@ API_KEY = os.environ["OPENROUTER_API_KEY"]
 # For now, this AI is only for you.
 USER_ID = "ishtiaq"
 
+def web_search(query, max_results=5):
+    try:
+        results = DDGS().text(
+            query,
+            region="wt-wt",
+            safesearch="moderate",
+            max_results=max_results
+        )
+
+        if not results:
+            return "No web results found."
+
+        formatted = []
+
+        for i, result in enumerate(results, 1):
+            title = result.get("title", "")
+            body = result.get("body", "")
+            href = result.get("href", "")
+
+            formatted.append(
+                f"[{i}] {title}\n"
+                f"{body}\n"
+                f"Source: {href}"
+            )
+
+        return "\n\n".join(formatted)
+
+    except Exception as e:
+        print("Web search error:", e)
+        return "Web search failed."
+        
 SYSTEM_PROMPT = """
 You are BRO, the user's personal AI assistant.
 
