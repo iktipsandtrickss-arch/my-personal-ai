@@ -648,6 +648,7 @@ custom_css = """
     background: #0b0b0f !important;
 }
 
+
 /* Header */
 #bro-header {
     height: 65px;
@@ -670,11 +671,13 @@ custom_css = """
     font-size: 14px;
 }
 
+
 /* Chat */
 .chatbot {
     background: #0b0b0f !important;
     border: none !important;
 }
+
 
 /* Input area */
 #input-area {
@@ -682,6 +685,7 @@ custom_css = """
     border-top: 1px solid #292932;
     padding: 15px 20px;
 }
+
 
 /* Text box */
 #message-box textarea {
@@ -692,6 +696,7 @@ custom_css = """
     font-size: 16px !important;
     padding: 14px !important;
 }
+
 
 /* Send button */
 #send-button button {
@@ -704,6 +709,34 @@ custom_css = """
 
 #send-button button:hover {
     background: #7070ff !important;
+}
+
+
+/* =========================================================
+   HIDE GRADIO DEFAULT UI
+   ========================================================= */
+
+/* Hide Built with Gradio footer */
+footer {
+    display: none !important;
+}
+
+
+/* Hide Chatbot label */
+.chatbot .label-wrap {
+    display: none !important;
+}
+
+
+/* Hide other default labels */
+.label-wrap {
+    display: none !important;
+}
+
+
+/* Remove extra chatbot spacing */
+.chatbot {
+    margin-top: 0 !important;
 }
 
 """
