@@ -600,29 +600,181 @@ def chat(message, history):
 
 
 # =========================================================
-# GRADIO
+# BRO CUSTOM UI
 # =========================================================
 
-demo = gr.ChatInterface(
-    fn=chat,
+custom_css = """
+
+/* ---------- GLOBAL ---------- */
+
+body {
+    background: #0b0b0f !important;
+}
+
+.gradio-container {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #0b0b0f !important;
+}
+
+/* ---------- HEADER ---------- */
+
+#bro-header {
+    height: 70px;
+    background: #111116;
+    border-bottom: 1px solid #24242c;
+    display: flex;
+    align-items: center;
+    padding: 0 28px;
+}
+
+#bro-title {
+    font-size: 25px;
+    font-weight: 700;
+    color: white;
+}
+
+#bro-status {
+    margin-left: 14px;
+    color: #35e875;
+    font-size: 14px;
+}
+
+/* ---------- CHAT ---------- */
+
+#chatbot {
+    background: #0b0b0f !important;
+    border: none !important;
+}
+
+.message {
+    font-size: 16px !important;
+}
+
+/* ---------- INPUT ---------- */
+
+#input-area {
+    background: #111116;
+    border-top: 1px solid #24242c;
+    padding: 18px 25px 22px;
+}
+
+#message-box textarea {
+    background: #1b1b22 !important;
+    color: white !important;
+    border: 1px solid #30303a !important;
+    border-radius: 18px !important;
+    padding: 15px !important;
+    font-size: 16px !important;
+}
+
+#message-box textarea:focus {
+    border-color: #5555ff !important;
+    box-shadow: 0 0 0 1px #5555ff !important;
+}
+
+/* ---------- BUTTON ---------- */
+
+#send-button button {
+    background: #5b5bf7 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 14px !important;
+    font-size: 18px !important;
+    min-width: 80px;
+}
+
+#send-button button:hover {
+    background: #7070ff !important;
+}
+
+/* ---------- MOBILE ---------- */
+
+@media (max-width: 700px) {
+
+    #bro-header {
+        padding: 0 16px;
+    }
+
+    #bro-title {
+        font-size: 21px;
+    }
+
+    #input-area {
+        padding: 12px;
+    }
+}
+
+"""
+
+with gr.Blocks(
     title="BRO",
-    description="Your personal AI bro 🤖",
-    multimodal=True,
-    textbox=gr.MultimodalTextbox(
-        file_count="multiple",
-        file_types=[
-    ".pdf",
-    ".txt",
-    ".docx",
-    ".csv",
-    ".xlsx",
-    ".jpg",
-    ".jpeg",
-    ".png",
-    ".webp"
-]
+    css=custom_css,
+    theme=gr.themes.Base(
+        primary_hue="indigo",
+        neutral_hue="slate"
     )
-)
+) as demo:
+
+    # HEADER
+    gr.HTML("""
+        <div id="bro-header">
+            <div id="bro-title">BRO</div>
+            <div id="bro-status">● Online</div>
+        </div>
+    """)
+
+    # CHAT
+    chatbot = gr.Chatbot(
+        elem_id="chatbot",
+        height="calc(100vh - 180px)",
+        show_label=False,
+        type="messages"
+    )
+
+    # INPUT
+    with gr.Row(elem_id="input-area"):
+
+        message_box = gr.MultimodalTextbox(
+            elem_id="message-box",
+            placeholder="Message BRO...",
+            file_count="multiple",
+            file_types=[
+                ".pdf",
+                ".txt",
+                ".docx",
+                ".csv",
+                ".xlsx",
+                ".jpg",
+                ".jpeg",
+                ".png",
+                ".webp"
+            ],
+            show_label=False,
+            scale=8
+        )
+
+        send_button = gr.Button(
+            "➤",
+            elem_id="send-button",
+            scale=1
+        )
+
+    # SEND
+    send_button.click(
+        fn=chat,
+        inputs=[message_box, chatbot],
+        outputs=chatbot,
+        api_name="chat"
+    )
+
+    message_box.submit(
+        fn=chat,
+        inputs=[message_box, chatbot],
+        outputs=chatbot,
+        api_name="chat_submit"
+    )
 
 
 # =========================================================
