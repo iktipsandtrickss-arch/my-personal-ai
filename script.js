@@ -128,6 +128,8 @@ async function sendMessage() {
 
         // Gradio returns an event ID
         const eventId = result.event_id;
+        console.log("GRADIO START RESPONSE:", result);
+alert(JSON.stringify(result));
 
         if (!eventId) {
             throw new Error("No event_id returned by Gradio");
