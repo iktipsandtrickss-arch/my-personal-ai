@@ -451,11 +451,42 @@ def chat(message, history):
         })
 
     # -----------------------------------------------------
-    # OPENROUTER → LOCAL SMOLLM2 FALLBACK
-    # -----------------------------------------------------
+# GEMINI → OPENROUTER → LOCAL SMOLLM2 FALLBACK
+# -----------------------------------------------------
 
-    answer = None
-    openrouter_error = None
+answer = None
+gemini_error = None
+openrouter_error = None
+
+# -----------------------------------------------------
+# GEMINI
+# -----------------------------------------------------
+
+try:
+
+    answer = ask_gemini(messages)
+
+    if answer:
+        print("Gemini response received.")
+
+except Exception as e:
+
+    gemini_error = str(e)
+
+    print(
+        "Gemini failed:",
+        e
+    )
+
+# -----------------------------------------------------
+# OPENROUTER FALLBACK
+# -----------------------------------------------------
+
+if not answer:
+
+    print(
+        "Gemini unavailable → Trying OpenRouter"
+    )
 
     try:
 
@@ -501,33 +532,34 @@ def chat(message, history):
             e
         )
 
-    # -----------------------------------------------------
-    # FALLBACK TO LOCAL SMOLLM2
-    # -----------------------------------------------------
+# -----------------------------------------------------
+# LOCAL SMOLLM2 FINAL FALLBACK
+# -----------------------------------------------------
 
-    if not answer:
+if not answer:
+
+    print(
+        "Gemini + OpenRouter unavailable → "
+        "Using local SmolLM2"
+    )
+
+    try:
+
+        answer = ask_local_ai(messages)
+
+    except Exception as e:
 
         print(
-            "OpenRouter unavailable → Using local SmolLM2"
+            "Local AI error:",
+            e
         )
 
-        try:
-
-            answer = ask_local_ai(messages)
-
-        except Exception as e:
-
-            print(
-                "Local AI error:",
-                e
-            )
-
-            return (
-                "ভাই, OpenRouter আর local SmolLM2—"
-                "দুটোতেই সমস্যা হচ্ছে.\n\n"
-                f"OpenRouter: {openrouter_error}\n"
-                f"Local AI: {e}"
-            )
+        return (
+            "ভাই, তিনটা AI service-এই সমস্যা হচ্ছে.\n\n"
+            f"Gemini: {gemini_error}\n"
+            f"OpenRouter: {openrouter_error}\n"
+            f"Local AI: {e}"
+        )
 
     answer = answer.strip()
 
