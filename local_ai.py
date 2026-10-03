@@ -1,6 +1,6 @@
 import requests
 
-LOCAL_AI_URL = "https://zone-observations-gaps-reporter.trycloudflare.com/v1/chat/completions"
+LOCAL_AI_URL = "https://why-skill-nomination-tough.trycloudflare.com"
 
 
 def ask_local_ai(messages):
