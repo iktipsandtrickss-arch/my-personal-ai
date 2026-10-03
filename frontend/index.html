@@ -1,1 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <title>BRO - Personal AI</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="app">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+
+            <div class="logo">
+                🤖 <span>BRO</span>
+            </div>
+
+            <button class="new-chat">
+                ＋ New Chat
+            </button>
+
+            <div class="menu">
+
+                <div class="menu-item">
+                    💬 Chats
+                </div>
+
+                <div class="menu-item">
+                    🧠 Memory
+                </div>
+
+                <div class="menu-item">
+                    📁 Files
+                </div>
+
+            </div>
+
+            <div class="sidebar-bottom">
+
+                <div class="menu-item">
+                    ⚙️ Settings
+                </div>
+
+            </div>
+
+        </aside>
+
+
+        <!-- MAIN CHAT -->
+        <main class="chat-area">
+
+            <!-- HEADER -->
+            <header class="chat-header">
+
+                <div>
+                    <h1>BRO</h1>
+
+                    <span class="status">
+                        ● Online
+                    </span>
+                </div>
+
+                <button class="header-button">
+                    ⋮
+                </button>
+
+            </header>
+
+
+            <!-- MESSAGES -->
+            <section class="messages">
+
+                <!-- AI MESSAGE -->
+                <div class="message ai">
+
+                    <div class="avatar">
+                        🤖
+                    </div>
+
+                    <div class="bubble">
+
+                        <div class="name">
+                            BRO
+                        </div>
+
+                        <div class="text">
+                            Hey bro! 👋<br>
+                            I'm your personal AI assistant.
+                            <br><br>
+                            What can I help you with?
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- USER MESSAGE -->
+                <div class="message user">
+
+                    <div class="bubble">
+
+                        <div class="text">
+                            Hello BRO 😎
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- AI MESSAGE -->
+                <div class="message ai">
+
+                    <div class="avatar">
+                        🤖
+                    </div>
+
+                    <div class="bubble">
+
+                        <div class="name">
+                            BRO
+                        </div>
+
+                        <div class="text">
+                            What's up? 😎
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- INPUT -->
+            <div class="input-area">
+
+                <button class="attach">
+                    📎
+                </button>
+
+                <input
+                    type="text"
+                    placeholder="Message BRO..."
+                    id="messageInput"
+                >
+
+                <button class="mic">
+                    🎤
+                </button>
+
+                <button class="send" id="sendButton">
+                    ↑
+                </button>
+
+            </div>
+
+        </main>
+
+    </div>
+
+
+    <script src="script.js"></script>
+
+</body>
+</html>
