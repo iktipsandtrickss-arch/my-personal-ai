@@ -188,6 +188,7 @@ User question:
 # =========================================================
 
 def chat(message, history):
+
     if isinstance(message, dict):
         user_text = message.get("text", "") or ""
         uploaded_files = message.get("files", []) or []
@@ -210,13 +211,11 @@ def chat(message, history):
             if not filename or not content:
                 continue
 
-            # IMAGE
             if isinstance(content, dict):
 
                 if content.get("type") == "image_url":
                     uploaded_images.append(content)
 
-            # TEXT / DOCUMENT
             else:
                 file_context_parts.append(
                     f"FILE: {filename}\n{content}"
@@ -230,6 +229,7 @@ def chat(message, history):
     # -----------------------------------------------------
 
     try:
+
         memories = get_memories(USER_ID)
 
         memory_text = "\n".join(
@@ -239,6 +239,7 @@ def chat(message, history):
         )
 
     except Exception as e:
+
         print("Memory load error:", e)
         memory_text = ""
 
@@ -251,6 +252,7 @@ def chat(message, history):
 
     try:
         should_search = needs_web_search(user_text)
+
     except Exception:
         should_search = False
 
@@ -333,7 +335,6 @@ def chat(message, history):
 
             for item in content:
 
-                # TEXT ITEM
                 if isinstance(item, str):
 
                     if item.strip():
@@ -343,12 +344,10 @@ def chat(message, history):
                             "text": item
                         })
 
-                # DICTIONARY ITEM
                 elif isinstance(item, dict):
 
                     item_type = item.get("type")
 
-                    # TEXT
                     if item_type == "text":
 
                         text = str(
@@ -362,12 +361,9 @@ def chat(message, history):
                                 "text": text
                             })
 
-                    # IMAGE
                     elif item_type == "image_url":
 
-                        image_url = item.get(
-                            "image_url"
-                        )
+                        image_url = item.get("image_url")
 
                         if image_url:
 
@@ -388,7 +384,6 @@ def chat(message, history):
 
             item_type = content.get("type")
 
-            # TEXT
             if item_type == "text":
 
                 text = str(
@@ -407,12 +402,9 @@ def chat(message, history):
                         ]
                     })
 
-            # IMAGE
             elif item_type == "image_url":
 
-                image_url = content.get(
-                    "image_url"
-                )
+                image_url = content.get("image_url")
 
                 if image_url:
 
@@ -450,117 +442,128 @@ def chat(message, history):
             "content": current_content
         })
 
+    # =====================================================
+    # GEMINI → OPENROUTER → LOCAL SMOLLM2 FALLBACK
+    # =====================================================
+
+    answer = None
+    gemini_error = None
+    openrouter_error = None
+    local_error = None
+
     # -----------------------------------------------------
-# GEMINI → OPENROUTER → LOCAL SMOLLM2 FALLBACK
-# -----------------------------------------------------
-
-answer = None
-gemini_error = None
-openrouter_error = None
-
-# -----------------------------------------------------
-# GEMINI
-# -----------------------------------------------------
-
-try:
-
-    answer = ask_gemini(messages)
-
-    if answer:
-        print("Gemini response received.")
-
-except Exception as e:
-
-    gemini_error = str(e)
-
-    print(
-        "Gemini failed:",
-        e
-    )
-
-# -----------------------------------------------------
-# OPENROUTER FALLBACK
-# -----------------------------------------------------
-
-if not answer:
-
-    print(
-        "Gemini unavailable → Trying OpenRouter"
-    )
+    # GEMINI
+    # -----------------------------------------------------
 
     try:
 
-        response = requests.post(
-            OPENROUTER_URL,
+        answer = ask_gemini(messages)
 
-            headers={
-                "Authorization": f"Bearer {API_KEY}",
-                "Content-Type": "application/json"
-            },
+        if answer:
+            print("Gemini response received.")
 
-            json={
-                "model": "openrouter/free",
-                "messages": messages
-            },
+    except Exception as e:
 
-            timeout=60
+        gemini_error = str(e)
+
+        print(
+            "Gemini failed:",
+            e
         )
 
-        if response.status_code == 200:
+    # -----------------------------------------------------
+    # OPENROUTER FALLBACK
+    # -----------------------------------------------------
 
-            data = response.json()
+    if not answer:
 
-            answer = data["choices"][0]["message"]["content"]
+        print(
+            "Gemini unavailable → Trying OpenRouter"
+        )
 
-        else:
+        try:
 
-            openrouter_error = (
-                f"HTTP {response.status_code}: {response.text}"
+            response = requests.post(
+                OPENROUTER_URL,
+
+                headers={
+                    "Authorization": f"Bearer {API_KEY}",
+                    "Content-Type": "application/json"
+                },
+
+                json={
+                    "model": "openrouter/free",
+                    "messages": messages
+                },
+
+                timeout=60
             )
+
+            if response.status_code == 200:
+
+                data = response.json()
+
+                answer = data["choices"][0]["message"]["content"]
+
+            else:
+
+                openrouter_error = (
+                    f"HTTP {response.status_code}: "
+                    f"{response.text}"
+                )
+
+                print(
+                    "OpenRouter failed:",
+                    openrouter_error
+                )
+
+        except Exception as e:
+
+            openrouter_error = str(e)
 
             print(
-                "OpenRouter failed:",
-                openrouter_error
+                "OpenRouter connection failed:",
+                e
             )
 
-    except Exception as e:
+    # -----------------------------------------------------
+    # LOCAL SMOLLM2 FINAL FALLBACK
+    # -----------------------------------------------------
 
-        openrouter_error = str(e)
-
-        print(
-            "OpenRouter connection failed:",
-            e
-        )
-
-# -----------------------------------------------------
-# LOCAL SMOLLM2 FINAL FALLBACK
-# -----------------------------------------------------
-
-if not answer:
-
-    print(
-        "Gemini + OpenRouter unavailable → "
-        "Using local SmolLM2"
-    )
-
-    try:
-
-        answer = ask_local_ai(messages)
-
-    except Exception as e:
+    if not answer:
 
         print(
-            "Local AI error:",
-            e
+            "Gemini + OpenRouter unavailable → "
+            "Using local SmolLM2"
         )
+
+        try:
+
+            answer = ask_local_ai(messages)
+
+        except Exception as e:
+
+            local_error = str(e)
+
+            print(
+                "Local AI error:",
+                e
+            )
+
+    # -----------------------------------------------------
+    # ALL AI SERVICES FAILED
+    # -----------------------------------------------------
+
+    if not answer:
+
         return (
             "ভাই, তিনটা AI service-এই সমস্যা হচ্ছে.\n\n"
             f"Gemini: {gemini_error}\n"
             f"OpenRouter: {openrouter_error}\n"
-            f"Local AI: {e}"
+            f"Local AI: {local_error}"
         )
 
-    answer = answer.strip()
+    answer = str(answer).strip()
 
     # -----------------------------------------------------
     # ADD SOURCES
