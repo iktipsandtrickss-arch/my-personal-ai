@@ -553,8 +553,7 @@ if not answer:
             "Local AI error:",
             e
         )
-
-    return (
+        return (
             "ভাই, তিনটা AI service-এই সমস্যা হচ্ছে.\n\n"
             f"Gemini: {gemini_error}\n"
             f"OpenRouter: {openrouter_error}\n"
