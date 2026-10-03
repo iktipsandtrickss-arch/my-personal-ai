@@ -7,5 +7,5 @@ pypdf
 python-docx
 pandas
 openpyxl
-google-dotev
+google-genai
 python-dotev
