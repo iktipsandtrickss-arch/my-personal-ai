@@ -6,6 +6,7 @@ from ddgs import DDGS
 from memory import save_memory, get_memories
 from local_ai import ask_local_ai
 from file_handler import process_file
+from gemini import ask_gemini
 
 
 # =========================================================
