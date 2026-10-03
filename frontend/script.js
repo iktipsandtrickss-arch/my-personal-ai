@@ -1,47 +1,34 @@
+// ===============================
+// BRO FRONTEND → GRADIO BACKEND
+// ===============================
+
+const BACKEND_URL = "https://my-personal-ai-bwfc.onrender.com";
+
 const input = document.getElementById("messageInput");
 const sendButton = document.getElementById("sendButton");
 const messages = document.querySelector(".messages");
 const newChatButton = document.querySelector(".new-chat");
 
-
-// =====================================================
-// BACKEND
-// =====================================================
-
-// Render-এ তোমার Gradio app-এর URL
-const BACKEND_URL = "vhttps://my-personal-ai-bwfc.onrender.com/";
-
-
-// =====================================================
-// CHAT HISTORY
-// =====================================================
-
 let chatHistory = [];
 
 
-// =====================================================
+// ===============================
 // ADD MESSAGE
-// =====================================================
+// ===============================
 
 function addMessage(text, type) {
-
     const message = document.createElement("div");
-
     message.className = `message ${type}`;
 
     if (type === "ai") {
-
         message.innerHTML = `
             <div class="avatar">🤖</div>
-
             <div class="bubble">
                 <div class="name">BRO</div>
                 <div class="text"></div>
             </div>
         `;
-
     } else {
-
         message.innerHTML = `
             <div class="bubble">
                 <div class="text"></div>
@@ -52,41 +39,39 @@ function addMessage(text, type) {
     message.querySelector(".text").textContent = text;
 
     messages.appendChild(message);
-
     messages.scrollTop = messages.scrollHeight;
+
+    return message;
 }
 
 
-// =====================================================
-// TYPING
-// =====================================================
+// ===============================
+// TYPING / LOADING
+// ===============================
 
-function showTyping() {
-
+function addTyping() {
     const message = document.createElement("div");
 
-    message.id = "typingMessage";
     message.className = "message ai";
+    message.id = "typingMessage";
 
     message.innerHTML = `
         <div class="avatar">🤖</div>
-
         <div class="bubble">
             <div class="name">BRO</div>
-            <div class="text">Thinking...</div>
+            <div class="text">
+                <span class="typing">Thinking...</span>
+            </div>
         </div>
     `;
 
     messages.appendChild(message);
-
     messages.scrollTop = messages.scrollHeight;
 }
 
 
 function removeTyping() {
-
-    const typing =
-        document.getElementById("typingMessage");
+    const typing = document.getElementById("typingMessage");
 
     if (typing) {
         typing.remove();
@@ -94,9 +79,9 @@ function removeTyping() {
 }
 
 
-// =====================================================
+// ===============================
 // SEND MESSAGE
-// =====================================================
+// ===============================
 
 async function sendMessage() {
 
@@ -104,30 +89,28 @@ async function sendMessage() {
 
     if (!text) return;
 
-    sendButton.disabled = true;
-
+    // Show user message
     addMessage(text, "user");
 
+    // Clear input
     input.value = "";
 
-    showTyping();
+    // Disable button
+    sendButton.disabled = true;
 
+    // Show typing
+    addTyping();
 
     try {
 
-        // =================================================
-        // STEP 1 — START GRADIO API CALL
-        // =================================================
-
+        // Gradio API
         const response = await fetch(
             `${BACKEND_URL}/gradio_api/call/chat`,
             {
                 method: "POST",
-
                 headers: {
                     "Content-Type": "application/json"
                 },
-
                 body: JSON.stringify({
                     data: [
                         text,
@@ -137,129 +120,86 @@ async function sendMessage() {
             }
         );
 
-
         if (!response.ok) {
-
-            throw new Error(
-                `HTTP ${response.status}`
-            );
+            throw new Error(`HTTP ${response.status}`);
         }
 
+        const result = await response.json();
 
-        const result =
-            await response.json();
-
-
-        console.log(
-            "Gradio start response:",
-            result
-        );
-
-
-        const eventId =
-            result.event_id;
-
+        // Gradio returns an event ID
+        const eventId = result.event_id;
 
         if (!eventId) {
-
-            throw new Error(
-                "Gradio event ID পাওয়া যায়নি"
-            );
+            throw new Error("No event_id returned by Gradio");
         }
 
 
-        // =================================================
-        // STEP 2 — WAIT FOR RESULT
-        // =================================================
+        // ===============================
+        // WAIT FOR GRADIO RESULT
+        // ===============================
 
-        const resultResponse =
-            await fetch(
-                `${BACKEND_URL}/gradio_api/call/chat/${eventId}`
-            );
-
-
-        if (!resultResponse.ok) {
-
-            throw new Error(
-                `Result HTTP ${resultResponse.status}`
-            );
-        }
-
-
-        const resultText =
-            await resultResponse.text();
-
-
-        console.log(
-            "Gradio result:",
-            resultText
+        const resultResponse = await fetch(
+            `${BACKEND_URL}/gradio_api/call/chat/${eventId}`
         );
 
-
-        // =================================================
-        // PARSE SSE
-        // =================================================
-
-        let answer = null;
-
-        const lines =
-            resultText.split("\n");
+        if (!resultResponse.ok) {
+            throw new Error(`Result HTTP ${resultResponse.status}`);
+        }
 
 
-        for (const line of lines) {
+        // Gradio streams events
+        const reader = resultResponse.body.getReader();
+        const decoder = new TextDecoder();
 
-            if (!line.startsWith("data:")) {
-                continue;
-            }
-
-
-            const jsonText =
-                line.substring(5).trim();
+        let buffer = "";
+        let finalAnswer = "";
 
 
-            if (!jsonText) {
-                continue;
-            }
+        while (true) {
+
+            const { value, done } = await reader.read();
+
+            if (done) break;
+
+            buffer += decoder.decode(value, {
+                stream: true
+            });
+
+            const lines = buffer.split("\n");
+
+            buffer = lines.pop();
 
 
-            try {
+            for (const line of lines) {
 
-                const data =
-                    JSON.parse(jsonText);
-
-
-                if (Array.isArray(data)) {
-
-                    const last =
-                        data[data.length - 1];
-
-
-                    // Gradio ChatInterface সাধারণত
-                    // output-এর মধ্যে string দেয়
-
-                    if (typeof last === "string") {
-
-                        answer = last;
-
-                    } else if (
-                        last &&
-                        typeof last === "object"
-                    ) {
-
-                        answer =
-                            last.text ||
-                            last.content ||
-                            JSON.stringify(last);
-                    }
+                if (!line.startsWith("data:")) {
+                    continue;
                 }
 
+                const data = line.substring(5).trim();
 
-            } catch (error) {
+                if (!data) continue;
 
-                console.log(
-                    "SSE parse error:",
-                    error
-                );
+                try {
+
+                    const parsed = JSON.parse(data);
+
+                    if (Array.isArray(parsed)) {
+
+                        // Usually Gradio output is:
+                        // [answer]
+
+                        if (parsed.length > 0) {
+                            finalAnswer = parsed[0];
+                        }
+
+                    }
+
+                } catch (e) {
+
+                    // Ignore non-JSON streaming lines
+
+                }
             }
         }
 
@@ -267,123 +207,100 @@ async function sendMessage() {
         removeTyping();
 
 
-        if (!answer) {
-
-            answer =
-                "BRO কোনো response দিতে পারেনি 😕";
+        if (!finalAnswer) {
+            finalAnswer =
+                "Bro, backend থেকে কোনো response আসেনি 😕";
         }
 
 
-        // =================================================
-        // SAVE HISTORY
-        // =================================================
-
-        chatHistory.push([
-            text,
-            answer
-        ]);
+        // Show AI response
+        addMessage(finalAnswer, "ai");
 
 
-        // =================================================
-        // SHOW ANSWER
-        // =================================================
+        // Save conversation locally
+        chatHistory.push({
+            role: "user",
+            content: text
+        });
 
-        addMessage(
-            answer,
-            "ai"
-        );
+        chatHistory.push({
+            role: "assistant",
+            content: finalAnswer
+        });
 
 
     } catch (error) {
 
-        console.error(
-            "Backend connection error:",
-            error
-        );
-
+        console.error("BRO ERROR:", error);
 
         removeTyping();
 
-
         addMessage(
-            "Backend-এর সাথে connection হচ্ছে না bro 😕\n\n" +
-            "Render URL অথবা Gradio API check করতে হবে।",
+            "Backend-এর সাথে connection problem হচ্ছে bro 😕\n\n" +
+            "Render server বা Gradio API check করো।",
             "ai"
         );
+
+    } finally {
+
+        sendButton.disabled = false;
+        input.focus();
+
     }
-
-
-    sendButton.disabled = false;
-
-    input.focus();
 }
 
 
-// =====================================================
-// SEND BUTTON
-// =====================================================
+// ===============================
+// ENTER TO SEND
+// ===============================
 
-sendButton.addEventListener(
-    "click",
-    sendMessage
-);
+input.addEventListener("keydown", function(event) {
 
+    if (event.key === "Enter" && !event.shiftKey) {
 
-// =====================================================
-// ENTER
-// =====================================================
+        event.preventDefault();
 
-input.addEventListener(
-    "keydown",
-    function(event) {
-
-        if (
-            event.key === "Enter" &&
-            !event.shiftKey
-        ) {
-
-            event.preventDefault();
-
-            sendMessage();
-        }
+        sendMessage();
     }
-);
+
+});
 
 
-// =====================================================
+// ===============================
+// SEND BUTTON
+// ===============================
+
+sendButton.addEventListener("click", sendMessage);
+
+
+// ===============================
 // NEW CHAT
-// =====================================================
+// ===============================
 
-newChatButton.addEventListener(
-    "click",
-    function() {
+newChatButton.addEventListener("click", function() {
 
-        chatHistory = [];
+    chatHistory = [];
 
-        messages.innerHTML = `
-            <div class="message ai">
+    messages.innerHTML = `
+        <div class="message ai">
 
-                <div class="avatar">
-                    🤖
-                </div>
+            <div class="avatar">🤖</div>
 
-                <div class="bubble">
+            <div class="bubble">
 
-                    <div class="name">
-                        BRO
-                    </div>
+                <div class="name">BRO</div>
 
-                    <div class="text">
-                        New chat started 👋
-                        <br><br>
-                        What's up bro?
-                    </div>
-
+                <div class="text">
+                    New chat started 👋
+                    <br><br>
+                    What's up bro?
                 </div>
 
             </div>
-        `;
 
-        input.focus();
-    }
-);
+        </div>
+    `;
+
+    input.focus();
+
+});
