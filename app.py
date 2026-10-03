@@ -708,32 +708,38 @@ custom_css = """
 
 """
 
-demo = gr.ChatInterface(
-    fn=chat,
-    title="",
-    description="",
+with gr.Blocks(css=custom_css, title="BRO AI") as demo:
 
-    css=custom_css,
+    gr.HTML("""
+    <div id="bro-header">
+        <div id="bro-title">BRO AI</div>
+        <div id="bro-status">● Online</div>
+    </div>
+    """)
 
-    multimodal=True,
+    gr.ChatInterface(
+        fn=chat,
+        title="",
+        description="",
+        multimodal=True,
 
-    textbox=gr.MultimodalTextbox(
-        elem_id="message-box",
-        file_count="multiple",
-        file_types=[
-            ".pdf",
-            ".txt",
-            ".docx",
-            ".csv",
-            ".xlsx",
-            ".jpg",
-            ".jpeg",
-            ".png",
-            ".webp"
-        ],
-        placeholder="Message BRO..."
+        textbox=gr.MultimodalTextbox(
+            elem_id="message-box",
+            file_count="multiple",
+            file_types=[
+                ".pdf",
+                ".txt",
+                ".docx",
+                ".csv",
+                ".xlsx",
+                ".jpg",
+                ".jpeg",
+                ".png",
+                ".webp"
+            ],
+            placeholder="Message BRO..."
+        )
     )
-)
 
 
 
