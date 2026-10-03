@@ -605,28 +605,22 @@ def chat(message, history):
 
 custom_css = """
 
-/* ---------- GLOBAL ---------- */
-
-body {
-    background: #0b0b0f !important;
-}
-
+/* Full page */
 .gradio-container {
     max-width: 100% !important;
-    padding: 0 !important;
     margin: 0 !important;
+    padding: 0 !important;
     background: #0b0b0f !important;
 }
 
-/* ---------- HEADER ---------- */
-
+/* Header */
 #bro-header {
-    height: 70px;
+    height: 65px;
     background: #111116;
-    border-bottom: 1px solid #24242c;
+    border-bottom: 1px solid #292932;
     display: flex;
     align-items: center;
-    padding: 0 28px;
+    padding: 0 25px;
 }
 
 #bro-title {
@@ -636,145 +630,76 @@ body {
 }
 
 #bro-status {
-    margin-left: 14px;
     color: #35e875;
+    margin-left: 14px;
     font-size: 14px;
 }
 
-/* ---------- CHAT ---------- */
-
-#chatbot {
+/* Chat */
+.chatbot {
     background: #0b0b0f !important;
     border: none !important;
 }
 
-.message {
-    font-size: 16px !important;
-}
-
-/* ---------- INPUT ---------- */
-
+/* Input area */
 #input-area {
     background: #111116;
-    border-top: 1px solid #24242c;
-    padding: 18px 25px 22px;
+    border-top: 1px solid #292932;
+    padding: 15px 20px;
 }
 
+/* Text box */
 #message-box textarea {
     background: #1b1b22 !important;
     color: white !important;
-    border: 1px solid #30303a !important;
+    border: 1px solid #34343f !important;
     border-radius: 18px !important;
-    padding: 15px !important;
     font-size: 16px !important;
+    padding: 14px !important;
 }
 
-#message-box textarea:focus {
-    border-color: #5555ff !important;
-    box-shadow: 0 0 0 1px #5555ff !important;
-}
-
-/* ---------- BUTTON ---------- */
-
+/* Send button */
 #send-button button {
     background: #5b5bf7 !important;
     color: white !important;
     border: none !important;
     border-radius: 14px !important;
-    font-size: 18px !important;
-    min-width: 80px;
+    font-size: 20px !important;
 }
 
 #send-button button:hover {
     background: #7070ff !important;
 }
 
-/* ---------- MOBILE ---------- */
-
-@media (max-width: 700px) {
-
-    #bro-header {
-        padding: 0 16px;
-    }
-
-    #bro-title {
-        font-size: 21px;
-    }
-
-    #input-area {
-        padding: 12px;
-    }
-}
-
 """
 
-with gr.Blocks(
-    title="BRO",
+demo = gr.ChatInterface(
+    fn=chat,
+    title="",
+    description="",
+
     css=custom_css,
-    theme=gr.themes.Base(
-        primary_hue="indigo",
-        neutral_hue="slate"
+
+    multimodal=True,
+
+    textbox=gr.MultimodalTextbox(
+        elem_id="message-box",
+        file_count="multiple",
+        file_types=[
+            ".pdf",
+            ".txt",
+            ".docx",
+            ".csv",
+            ".xlsx",
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp"
+        ],
+        placeholder="Message BRO..."
     )
-) as demo:
+)
 
-    # HEADER
-    gr.HTML("""
-        <div id="bro-header">
-            <div id="bro-title">BRO</div>
-            <div id="bro-status">● Online</div>
-        </div>
-    """)
-
-    # CHAT
-    chatbot = gr.Chatbot(
-        elem_id="chatbot",
-        height="calc(100vh - 180px)",
-        show_label=False,
-        type="messages"
-    )
-
-    # INPUT
-    with gr.Row(elem_id="input-area"):
-
-        message_box = gr.MultimodalTextbox(
-            elem_id="message-box",
-            placeholder="Message BRO...",
-            file_count="multiple",
-            file_types=[
-                ".pdf",
-                ".txt",
-                ".docx",
-                ".csv",
-                ".xlsx",
-                ".jpg",
-                ".jpeg",
-                ".png",
-                ".webp"
-            ],
-            show_label=False,
-            scale=8
-        )
-
-        send_button = gr.Button(
-            "➤",
-            elem_id="send-button",
-            scale=1
-        )
-
-    # SEND
-    send_button.click(
-        fn=chat,
-        inputs=[message_box, chatbot],
-        outputs=chatbot,
-        api_name="chat"
-    )
-
-    message_box.submit(
-        fn=chat,
-        inputs=[message_box, chatbot],
-        outputs=chatbot,
-        api_name="chat_submit"
-    )
 
 
 # =========================================================
