@@ -605,6 +605,7 @@ def chat(message, history):
 
 demo = gr.ChatInterface(
     fn=chat,
+    api_name="chat"
     title="BRO",
     description="Your personal AI bro 🤖",
     multimodal=True,
